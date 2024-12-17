@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pitch Perfect</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Pitch Perfect</h1>
+        
+        <div class="game-area">
+            <div class="visualization">
+                <canvas id="waveformCanvas"></canvas>
+                <div class="pitch-display">
+                    <div id="currentPitch">-- Hz</div>
+                    <div id="targetPitch">Target: -- Hz</div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="startBtn" class="primary-btn">Start Game</button>
+                <div class="score" id="score">Score: 0</div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/pitchy@2.0.8/dist/pitchy.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html> 
