@@ -1,4 +1,4 @@
-import * as pitchy from 'https://cdn.jsdelivr.net/npm/pitchy@4.0.7/dist/pitchy.min.js';
+import { PitchDetector } from "https://esm.sh/pitchy@4";
 
 class PitchGame {
     constructor() {
@@ -9,6 +9,13 @@ class PitchGame {
         this.score = 0;
         this.targetPitch = null;
         this.stream = null;
+        this.detector = null;
+        this.inputBuffer = null;
+        
+        // Configuration
+        this.minVolumeDecibels = -10;
+        this.minClarityPercent = 80;
+        this.inputBufferSize = 2048;
         
         // Canvas setup
         this.canvas = document.getElementById('waveformCanvas');
@@ -46,27 +53,26 @@ class PitchGame {
                 await this.audioContext.resume();
             }
 
-            const constraints = {
+            this.stream = await navigator.mediaDevices.getUserMedia({
                 audio: {
                     echoCancellation: true,
                     noiseSuppression: true,
-                    autoGainControl: true,
-                    sampleRate: 44100
+                    autoGainControl: true
                 }
-            };
-
-            this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+            });
             
-            this.analyser = this.audioContext.createAnalyser();
-            this.analyser.fftSize = 2048;
-            this.analyser.smoothingTimeConstant = 0.8;
-            this.analyser.minDecibels = -90;
-            this.analyser.maxDecibels = -10;
-
+            // Setup analyzer with specific buffer size
+            this.analyser = new AnalyserNode(this.audioContext, {
+                fftSize: this.inputBufferSize
+            });
+            
             this.microphone = this.audioContext.createMediaStreamSource(this.stream);
             this.microphone.connect(this.analyser);
             
-            console.log('Audio input initialized:', this.analyser.frequencyBinCount);
+            // Initialize pitch detector
+            this.detector = PitchDetector.forFloat32Array(this.analyser.fftSize);
+            this.detector.minVolumeDecibels = this.minVolumeDecibels;
+            this.inputBuffer = new Float32Array(this.detector.inputLength);
             
             this.generateNewTarget();
             this.isPlaying = true;
@@ -75,14 +81,7 @@ class PitchGame {
             this.update();
         } catch (error) {
             console.error('Error accessing microphone:', error);
-            
-            if (error.name === 'NotAllowedError') {
-                alert('Microphone access was denied. Please allow microphone access in your browser settings.');
-            } else if (error.name === 'NotFoundError') {
-                alert('No microphone found. Please ensure your device has a working microphone.');
-            } else {
-                alert(`Error accessing microphone: ${error.message}`);
-            }
+            alert(`Error accessing microphone: ${error.message}`);
         }
     }
 
@@ -151,13 +150,12 @@ class PitchGame {
     }
 
     updatePitch() {
-        const bufferLength = this.analyser.frequencyBinCount;
-        const dataArray = new Float32Array(bufferLength);
-        this.analyser.getFloatTimeDomainData(dataArray);
+        if (!this.analyser || !this.detector || !this.audioContext || !this.inputBuffer) return;
 
-        const [pitch, clarity] = pitchy.PitchDetector.findPitch(dataArray, this.audioContext.sampleRate);
+        this.analyser.getFloatTimeDomainData(this.inputBuffer);
+        const [pitch, clarity] = this.detector.findPitch(this.inputBuffer, this.audioContext.sampleRate);
 
-        if (clarity > 0.8) {
+        if (clarity >= this.minClarityPercent / 100) {
             const pitchInHz = pitch.toFixed(1);
             this.currentPitchDisplay.textContent = `${pitchInHz} Hz`;
 
