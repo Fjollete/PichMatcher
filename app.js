@@ -1,4 +1,4 @@
-import { PitchDetector } from "./node_modules/pitchy/dist/pitchy.es.js";
+import { PitchDetector } from "./lib/pitchy.js";
 
 function checkBrowserSupport() {
     // Check for required features
