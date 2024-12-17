@@ -83,7 +83,8 @@ class PitchGame {
             
             // Setup analyzer with specific buffer size
             this.analyser = new AnalyserNode(this.audioContext, {
-                fftSize: this.inputBufferSize
+                fftSize: 2048,
+                smoothingTimeConstant: 0.8
             });
             
             this.microphone = this.audioContext.createMediaStreamSource(this.stream);
@@ -135,7 +136,7 @@ class PitchGame {
         const bufferLength = this.analyser.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
         
-        this.analyser.getByteFrequencyData(dataArray);
+        this.analyser.getByteTimeDomainData(dataArray);
 
         this.canvasCtx.fillStyle = 'rgb(26, 26, 26)';
         this.canvasCtx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -143,13 +144,12 @@ class PitchGame {
         this.canvasCtx.strokeStyle = '#4CAF50';
         this.canvasCtx.beginPath();
 
-        const barWidth = (this.canvas.width / bufferLength) * 2.5;
+        const sliceWidth = this.canvas.width / bufferLength;
         let x = 0;
 
         for (let i = 0; i < bufferLength; i++) {
-            const percent = dataArray[i] / 255;
-            const height = this.canvas.height * percent;
-            const y = this.canvas.height - height;
+            const v = dataArray[i] / 128.0;
+            const y = v * (this.canvas.height / 2);
 
             if (i === 0) {
                 this.canvasCtx.moveTo(x, y);
@@ -157,16 +157,10 @@ class PitchGame {
                 this.canvasCtx.lineTo(x, y);
             }
 
-            x += barWidth;
+            x += sliceWidth;
         }
 
-        this.canvasCtx.lineTo(this.canvas.width, this.canvas.height);
         this.canvasCtx.stroke();
-
-        const average = dataArray.reduce((a, b) => a + b) / bufferLength;
-        if (average > 0) {
-            console.log('Audio level:', average);
-        }
     }
 
     updatePitch() {
