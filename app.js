@@ -1,5 +1,9 @@
 class PitchGame {
     constructor() {
+        if (typeof pitchy === 'undefined') {
+            console.error('Pitchy library not loaded! Please check your HTML includes the Pitchy script.');
+            return;
+        }
         this.audioContext = null;
         this.analyser = null;
         this.microphone = null;
