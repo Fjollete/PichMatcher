@@ -20,7 +20,7 @@ class PitchGame {
         this.startBtn = document.getElementById('startBtn');
         this.currentPitchDisplay = document.getElementById('currentPitch');
         this.targetPitchDisplay = document.getElementById('targetPitch');
-        this.scoreDisplay = document.getElementById('scoreElement');
+        this.scoreDisplay = document.getElementById('score');
         
         // Bind methods
         this.startGame = this.startGame.bind(this);
@@ -166,7 +166,7 @@ class PitchGame {
             // Check if pitch matches target
             if (Math.abs(pitch - this.targetPitch) < 10) {
                 this.score += 1;
-                document.getElementById('score').textContent = `Score: ${this.score}`;
+                this.scoreDisplay.textContent = `Score: ${this.score}`;
                 this.generateNewTarget();
             }
         }
