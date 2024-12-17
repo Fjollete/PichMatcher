@@ -48,17 +48,23 @@ class PitchGame {
                 audio: {
                     echoCancellation: true,
                     noiseSuppression: true,
-                    autoGainControl: true
+                    autoGainControl: true,
+                    sampleRate: 44100
                 }
             };
 
             this.stream = await navigator.mediaDevices.getUserMedia(constraints);
             
             this.analyser = this.audioContext.createAnalyser();
-            this.microphone = this.audioContext.createMediaStreamSource(this.stream);
-            
-            this.microphone.connect(this.analyser);
             this.analyser.fftSize = 2048;
+            this.analyser.smoothingTimeConstant = 0.8;
+            this.analyser.minDecibels = -90;
+            this.analyser.maxDecibels = -10;
+
+            this.microphone = this.audioContext.createMediaStreamSource(this.stream);
+            this.microphone.connect(this.analyser);
+            
+            console.log('Audio input initialized:', this.analyser.frequencyBinCount);
             
             this.generateNewTarget();
             this.isPlaying = true;
@@ -107,7 +113,8 @@ class PitchGame {
     drawWaveform() {
         const bufferLength = this.analyser.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
-        this.analyser.getByteTimeDomainData(dataArray);
+        
+        this.analyser.getByteFrequencyData(dataArray);
 
         this.canvasCtx.fillStyle = 'rgb(26, 26, 26)';
         this.canvasCtx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -115,12 +122,13 @@ class PitchGame {
         this.canvasCtx.strokeStyle = '#4CAF50';
         this.canvasCtx.beginPath();
 
-        const sliceWidth = this.canvas.width * 1.0 / bufferLength;
+        const barWidth = (this.canvas.width / bufferLength) * 2.5;
         let x = 0;
 
         for (let i = 0; i < bufferLength; i++) {
-            const v = dataArray[i] / 128.0;
-            const y = v * this.canvas.height / 2;
+            const percent = dataArray[i] / 255;
+            const height = this.canvas.height * percent;
+            const y = this.canvas.height - height;
 
             if (i === 0) {
                 this.canvasCtx.moveTo(x, y);
@@ -128,11 +136,16 @@ class PitchGame {
                 this.canvasCtx.lineTo(x, y);
             }
 
-            x += sliceWidth;
+            x += barWidth;
         }
 
-        this.canvasCtx.lineTo(this.canvas.width, this.canvas.height / 2);
+        this.canvasCtx.lineTo(this.canvas.width, this.canvas.height);
         this.canvasCtx.stroke();
+
+        const average = dataArray.reduce((a, b) => a + b) / bufferLength;
+        if (average > 0) {
+            console.log('Audio level:', average);
+        }
     }
 
     updatePitch() {
