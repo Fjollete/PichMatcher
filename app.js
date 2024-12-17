@@ -58,6 +58,9 @@ class PitchGame {
         // Set canvas size
         this.resizeCanvas();
         window.addEventListener('resize', () => this.resizeCanvas());
+        
+        // Add this new property to store historical waveform data
+        this.waveformBuffer = new Array(2048).fill(128);
     }
 
     async startGame() {
@@ -84,7 +87,7 @@ class PitchGame {
             // Setup analyzer with specific buffer size
             this.analyser = new AnalyserNode(this.audioContext, {
                 fftSize: 2048,
-                smoothingTimeConstant: 0.8
+                smoothingTimeConstant: 0.2
             });
             
             this.microphone = this.audioContext.createMediaStreamSource(this.stream);
@@ -138,17 +141,25 @@ class PitchGame {
         
         this.analyser.getByteTimeDomainData(dataArray);
 
+        // Shift existing data to the left
+        this.waveformBuffer.splice(0, dataArray.length);
+        // Add new data to the end
+        this.waveformBuffer.push(...Array.from(dataArray));
+
+        // Clear the canvas
         this.canvasCtx.fillStyle = 'rgb(26, 26, 26)';
         this.canvasCtx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Draw the waveform
         this.canvasCtx.lineWidth = 2;
         this.canvasCtx.strokeStyle = '#4CAF50';
         this.canvasCtx.beginPath();
 
-        const sliceWidth = this.canvas.width / bufferLength;
+        const sliceWidth = this.canvas.width / this.waveformBuffer.length;
         let x = 0;
 
-        for (let i = 0; i < bufferLength; i++) {
-            const v = dataArray[i] / 128.0;
+        for (let i = 0; i < this.waveformBuffer.length; i++) {
+            const v = this.waveformBuffer[i] / 128.0;
             const y = v * (this.canvas.height / 2);
 
             if (i === 0) {
