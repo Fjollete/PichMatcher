@@ -1,9 +1,7 @@
+import * as pitchy from 'https://cdn.jsdelivr.net/npm/pitchy@4.0.7/dist/pitchy.min.js';
+
 class PitchGame {
     constructor() {
-        if (typeof pitchy === 'undefined') {
-            console.error('Pitchy library not loaded! Please check your HTML includes the Pitchy script.');
-            return;
-        }
         this.audioContext = null;
         this.analyser = null;
         this.microphone = null;
