@@ -1,4 +1,24 @@
-import { PitchDetector } from "https://esm.sh/pitchy@4";
+import { PitchDetector } from "https://unpkg.com/pitchy@4/dist/pitchy.es.js";
+
+function checkBrowserSupport() {
+    // Check for required features
+    const requirements = {
+        audioContext: 'AudioContext' in window || 'webkitAudioContext' in window,
+        getUserMedia: navigator.mediaDevices && 'getUserMedia' in navigator.mediaDevices,
+        modules: 'noModule' in HTMLScriptElement.prototype
+    };
+
+    const unsupported = Object.entries(requirements)
+        .filter(([, supported]) => !supported)
+        .map(([feature]) => feature);
+
+    if (unsupported.length > 0) {
+        throw new Error(
+            `Your browser doesn't support the following required features: ${unsupported.join(', ')}. ` +
+            'Please use a modern browser like Chrome, Firefox, or Edge.'
+        );
+    }
+}
 
 class PitchGame {
     constructor() {
@@ -176,5 +196,11 @@ class PitchGame {
 
 // Initialize the game when the page loads
 window.addEventListener('load', () => {
-    new PitchGame();
+    try {
+        checkBrowserSupport();
+        new PitchGame();
+    } catch (error) {
+        alert(error.message);
+        // Optionally disable game UI here
+    }
 }); 
